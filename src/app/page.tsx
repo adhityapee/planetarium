@@ -22,10 +22,16 @@ function Hero() {
       {/* scrim: lebih gelap di kiri (teks), lebih terang di kanan (Saturnus) */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#05060c] via-[#05060c]/70 to-[#05060c]/35" />
 
-      {/* Saturnus besar, sebagian keluar layar (scale-in di dalam, centering di luar) */}
-      <div className="pointer-events-none absolute right-[-12vw] top-1/2 -translate-y-1/2 md:right-[-6vw]">
+      {/* Saturnus close-up, sebagian keluar layar. Ukuran beda HP vs desktop
+          (size px, jadi pakai 2 instance ketimbang scale yang bentrok transform). */}
+      <div className="pointer-events-none absolute right-[-24vw] top-[22%] -translate-y-1/2 md:hidden">
         <div className="planet-rise" style={{ animationDelay: "0.5s" }}>
-          <Planet texture={saturn.texture} size={620} spin={saturn.spin} glow={saturn.glow} ring />
+          <Planet texture={saturn.texture} size={460} spin={saturn.spin} glow={saturn.glow} ring />
+        </div>
+      </div>
+      <div className="pointer-events-none absolute right-[-12vw] top-1/2 hidden -translate-y-1/2 md:block">
+        <div className="planet-rise" style={{ animationDelay: "0.5s" }}>
+          <Planet texture={saturn.texture} size={900} spin={saturn.spin} glow={saturn.glow} ring />
         </div>
       </div>
 

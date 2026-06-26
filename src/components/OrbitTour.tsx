@@ -25,8 +25,10 @@ const MOBILE: Geo = { CX: 50, CY: 23, RX: 32, RY: 15, FOCAL: Math.PI / 2 };
 
 const nf = new Intl.NumberFormat("id-ID");
 
-// seberapa besar planet fokus membesar (puncak skala = 0.36 + FOCUS_GAIN)
-const FOCUS_GAIN = 6;
+// seberapa besar planet fokus membesar (puncak skala = 0.36 + gain). Desktop besar
+// (close-up ~600px), mobile lebih kecil karena fokus di tengah-atas (ruang terbatas).
+const GAIN_DESKTOP = 14;
+const GAIN_MOBILE = 6;
 
 // ukuran dasar tiap planet. Rentang sempit (non-fokus sama-sama kecil) supaya saat
 // fokus, hanya 1 planet yang dominan; gain fokus yang membesarkannya.
@@ -43,12 +45,14 @@ function OrbitBody({
   base,
   progress,
   geo,
+  gain,
 }: {
   planet: P;
   index: number;
   base: number;
   progress: MotionValue<number>;
   geo: Geo;
+  gain: number;
 }) {
   const angle = useTransform(progress, (p) => geo.FOCAL + index * STEP - p * (N - 1) * STEP);
   const left = useTransform(angle, (a) => `${geo.CX + geo.RX * Math.cos(a)}%`);
@@ -56,7 +60,7 @@ function OrbitBody({
   const t = useTransform(angle, (a) => (Math.cos(a - geo.FOCAL) + 1) / 2); // 1 = fokus
   // close-up tajam ke 1 planet: fokus membesar dominan, sisanya mengecil (ala reference).
   // pangkat 6 -> jendela fokus sempit, tetangga cepat mengecil
-  const scale = useTransform(t, (v) => 0.36 + FOCUS_GAIN * v * v * v * v * v * v);
+  const scale = useTransform(t, (v) => 0.36 + gain * v * v * v * v * v * v);
   const opacity = useTransform(t, (v) => 0.4 + 0.6 * v);
   const zIndex = useTransform(t, (v) => Math.round(10 + v * 90));
 
@@ -273,8 +277,9 @@ export default function OrbitTour() {
     if (i !== focus) setFocus(i);
   });
 
+  const gain = mobile ? GAIN_MOBILE : GAIN_DESKTOP;
   const focused = PLANETS[focus];
-  const focusedSize = sizes[focus] * (0.36 + FOCUS_GAIN); // sesuai puncak skala fokus
+  const focusedSize = sizes[focus] * (0.36 + gain); // sesuai puncak skala fokus
 
   return (
     <section ref={ref} className="relative" style={{ height: `${N * 90 + 140}vh` }}>
@@ -353,7 +358,7 @@ export default function OrbitTour() {
 
             {/* planet-planet mengorbit */}
             {PLANETS.map((p, i) => (
-              <OrbitBody key={p.id} planet={p} index={i} base={sizes[i]} progress={pp} geo={geo} />
+              <OrbitBody key={p.id} planet={p} index={i} base={sizes[i]} progress={pp} geo={geo} gain={gain} />
             ))}
 
             {/* bulan mengelilingi planet fokus */}

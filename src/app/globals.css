@@ -69,40 +69,9 @@ body {
   to   { transform: rotate(360deg); }
 }
 
-/* ---- intro sinematik: tirai gelap mengkerut ke satu titik, kosmos muncul ----
-   Pakai clip-path (selalu ter-interpolasi); @property --var tidak mulus di
-   Lightning CSS. ponytail: clip-path circle, bukan mask radial ber-@property. */
-.intro-curtain {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: #05060c;
-  pointer-events: none;
-  animation: iris 1.5s cubic-bezier(0.45, 0, 0.2, 1) forwards;
-}
-@keyframes iris {
-  from { clip-path: circle(140% at 50% 45%); }
-  to   { clip-path: circle(0% at 50% 45%); }
-}
-
-/* masuk berlapis untuk hero */
-.rise { animation: rise 1s cubic-bezier(0.16, 1, 0.3, 1) both; }
-@keyframes rise {
-  from { opacity: 0; transform: translateY(26px); filter: blur(12px); }
-  to   { opacity: 1; transform: none; filter: blur(0); }
-}
-.planet-rise { animation: planet-rise 1.9s cubic-bezier(0.16, 1, 0.3, 1) both; }
-@keyframes planet-rise {
-  from { opacity: 0; transform: scale(0.82); }
-  to   { opacity: 0.9; transform: scale(1); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .intro-curtain { display: none; }
   .planet-surface,
   .twinkle,
-  .rise,
-  .planet-rise,
   [class*="moon-orbit"] { animation: none !important; }
 }

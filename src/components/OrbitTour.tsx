@@ -27,7 +27,7 @@ const nf = new Intl.NumberFormat("id-ID");
 
 // seberapa besar planet fokus membesar (puncak skala = 0.36 + gain). Desktop besar
 // (close-up ~600px), mobile lebih kecil karena fokus di tengah-atas (ruang terbatas).
-const GAIN_DESKTOP = 14;
+const GAIN_DESKTOP = 8;
 const GAIN_MOBILE = 6;
 
 // ukuran dasar tiap planet. Rentang sempit (non-fokus sama-sama kecil) supaya saat

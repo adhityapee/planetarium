@@ -6,6 +6,7 @@ import {
   AnimatePresence,
   useScroll,
   useTransform,
+  useMotionTemplate,
   useMotionValueEvent,
   useReducedMotion,
   type MotionValue,
@@ -24,12 +25,18 @@ const MOBILE: Geo = { CX: 50, CY: 23, RX: 32, RY: 15, FOCAL: Math.PI / 2 };
 
 const nf = new Intl.NumberFormat("id-ID");
 
-// ukuran dasar tiap planet (skala lembut dari diameter agar tetap terbaca)
+// seberapa besar planet fokus membesar (puncak skala = 0.36 + gain). Desktop besar
+// (close-up ~600px), mobile lebih kecil karena fokus di tengah-atas (ruang terbatas).
+const GAIN_DESKTOP = 8;
+const GAIN_MOBILE = 6;
+
+// ukuran dasar tiap planet. Rentang sempit (non-fokus sama-sama kecil) supaya saat
+// fokus, hanya 1 planet yang dominan; gain fokus yang membesarkannya.
 const sizes = (() => {
   const ds = PLANETS.map((p) => Math.log(p.diameterKm));
   const min = Math.min(...ds);
   const max = Math.max(...ds);
-  return PLANETS.map((p) => 44 + 52 * ((Math.log(p.diameterKm) - min) / (max - min)));
+  return PLANETS.map((p) => 32 + 22 * ((Math.log(p.diameterKm) - min) / (max - min)));
 })();
 
 function OrbitBody({
@@ -38,18 +45,22 @@ function OrbitBody({
   base,
   progress,
   geo,
+  gain,
 }: {
   planet: P;
   index: number;
   base: number;
   progress: MotionValue<number>;
   geo: Geo;
+  gain: number;
 }) {
   const angle = useTransform(progress, (p) => geo.FOCAL + index * STEP - p * (N - 1) * STEP);
   const left = useTransform(angle, (a) => `${geo.CX + geo.RX * Math.cos(a)}%`);
   const top = useTransform(angle, (a) => `${geo.CY + geo.RY * Math.sin(a)}%`);
   const t = useTransform(angle, (a) => (Math.cos(a - geo.FOCAL) + 1) / 2); // 1 = fokus
-  const scale = useTransform(t, (v) => 0.45 + 1.12 * v * v * v * v); // falloff tajam: fokus menonjol
+  // close-up tajam ke 1 planet: fokus membesar dominan, sisanya mengecil (ala reference).
+  // pangkat 6 -> jendela fokus sempit, tetangga cepat mengecil
+  const scale = useTransform(t, (v) => 0.36 + gain * v * v * v * v * v * v);
   const opacity = useTransform(t, (v) => 0.4 + 0.6 * v);
   const zIndex = useTransform(t, (v) => Math.round(10 + v * 90));
 
@@ -227,78 +238,149 @@ export default function OrbitTour() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  // pp = progres "tur" (planet bergerak), dikurung di plateau 0.1..0.9 supaya planet
-  // pertama & terakhir tetap tampil penuh. bloom = amplop zoom masuk/keluar ala reference.
-  const pp = useTransform(scrollYProgress, [0.1, 0.9], [0, 1], { clamp: true });
-  const bloom = useTransform(scrollYProgress, [0, 0.1, 0.9, 1], [0.45, 1, 1, 0.45]);
+  const geo = mobile ? MOBILE : DESKTOP;
+
+  // --- Timeline koreografi (ala reference) ---
+  // 0    -> 0.10 : intro, video luar angkasa + judul
+  // 0.10 -> 0.18 : reveal, clip-path lingkaran membuka -> orbit muncul
+  // 0.18 -> 0.88 : tur, planet zoom + panel detail
+  // 0.88 -> 1    : outro, zoom out ke gelap
+  const introOpacity = useTransform(scrollYProgress, [0, 0.06, 0.12], [1, 1, 0]);
+  const introBlur = useTransform(scrollYProgress, [0.05, 0.12], [0, 14]);
+  const introFilter = useMotionTemplate`blur(${introBlur}px)`;
+  const introY = useTransform(scrollYProgress, [0.05, 0.12], [0, -36]);
+
+  // scrim menggelapkan video saat orbit muncul (panel terbaca) lalu penuh di outro
+  // agar serah-terima ke section rekap mulus
+  const scrim = useTransform(
+    scrollYProgress,
+    [0.06, 0.18, 0.9, 1],
+    [0.25, 0.72, 0.72, 0.97],
+    { clamp: true },
+  );
+
+  // reveal: lingkaran membuka dari pusat orbit
+  const revealPct = useTransform(scrollYProgress, [0.1, 0.18], [0, 165], { clamp: true });
+  const clip = useMotionTemplate`circle(${revealPct}% at ${geo.CX}% ${geo.CY}%)`;
+
+  // zoom amplop + plateau (planet membesar saat masuk, mengecil saat keluar)
+  const bloom = useTransform(scrollYProgress, [0.1, 0.2, 0.86, 1], [0.5, 1, 1, 0.5]);
+
+  // pp = progres planet bergerak, hanya selama fase tur
+  const pp = useTransform(scrollYProgress, [0.18, 0.88], [0, 1], { clamp: true });
+
+  // UI (panel + dots) hanya muncul setelah reveal
+  const uiOpacity = useTransform(scrollYProgress, [0.15, 0.2], [0, 1], { clamp: true });
 
   useMotionValueEvent(pp, "change", (v) => {
     const i = Math.min(N - 1, Math.max(0, Math.round(v * (N - 1))));
     if (i !== focus) setFocus(i);
   });
 
-  const geo = mobile ? MOBILE : DESKTOP;
+  const gain = mobile ? GAIN_MOBILE : GAIN_DESKTOP;
   const focused = PLANETS[focus];
-  const focusedSize = sizes[focus] * 1.55; // sesuai puncak skala fokus
+  const focusedSize = sizes[focus] * (0.36 + gain); // sesuai puncak skala fokus
 
   return (
-    <section ref={ref} className="relative" style={{ height: `${N * 95}vh` }}>
+    <section ref={ref} className="relative" style={{ height: `${N * 90 + 140}vh` }}>
       <div className="sticky top-0 h-[100svh] overflow-hidden">
-        {/* zoom + dock: seluruh orbit mengembang/mengecil mengikuti bloom */}
-        <motion.div
-          className="absolute inset-0"
-          style={{ scale: bloom, transformOrigin: `${geo.CX}% ${geo.CY}%` }}
-        >
-        {/* lintasan elips */}
-        <svg
+        {/* video luar angkasa, autoplay loop; fallback = starfield di belakang */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
           aria-hidden
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="absolute inset-0 h-full w-full"
+          src="/hero.mp4"
+          className="absolute inset-0 z-0 h-full w-full object-cover motion-reduce:hidden"
+        />
+        {/* scrim: menggelapkan video saat orbit muncul */}
+        <motion.div
+          aria-hidden
+          className="absolute inset-0 z-[1] bg-[#05060c]"
+          style={{ opacity: scrim }}
+        />
+
+        {/* intro: judul di atas video, memudar saat reveal */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center"
+          style={{ opacity: introOpacity, filter: introFilter, y: introY }}
         >
-          <ellipse
-            cx={geo.CX}
-            cy={geo.CY}
-            rx={geo.RX}
-            ry={geo.RY}
-            fill="none"
-            stroke="rgba(255,255,255,0.10)"
-            strokeWidth="0.15"
-          />
-        </svg>
-
-        {/* Matahari di pusat */}
-        <div
-          className="absolute -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${geo.CX}%`, top: `${geo.CY}%`, zIndex: 5 }}
-        >
-          <Planet
-            texture={SUN_TEXTURE}
-            size={84}
-            spin={40}
-            glow="rgba(245,181,74,0.85)"
-            className="drop-shadow-[0_0_60px_rgba(245,181,74,0.6)]"
-          />
-        </div>
-
-        {/* planet-planet mengorbit */}
-        {PLANETS.map((p, i) => (
-          <OrbitBody key={p.id} planet={p} index={i} base={sizes[i]} progress={pp} geo={geo} />
-        ))}
-
-        {/* bulan mengelilingi planet fokus */}
-        <MoonOrbit planet={focused} index={focus} size={focusedSize} progress={pp} geo={geo} />
+          <p className="text-sm uppercase tracking-[0.3em] text-[var(--color-muted)]">
+            Planetarium
+          </p>
+          <h1 className="mt-4 font-serif text-7xl leading-[0.95] text-foreground md:text-8xl lg:text-9xl">
+            Tata Surya
+          </h1>
+          <p className="mt-6 max-w-md text-lg leading-relaxed text-foreground/80">
+            Delapan planet, satu Matahari, satu sistem. Geser ke bawah untuk
+            menyusurinya.
+          </p>
         </motion.div>
 
-        {/* panel detail (lapis 2) */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end bg-gradient-to-t from-[#05060c] via-[#05060c]/90 to-transparent px-6 pb-12 pt-16 md:inset-x-auto md:inset-y-0 md:right-0 md:w-[55%] md:items-center md:justify-end md:bg-none md:px-12 md:pb-0 md:pt-0 lg:px-16">
+        {/* orbit: muncul lewat clip-path reveal, lalu zoom mengikuti bloom */}
+        <motion.div className="absolute inset-0 z-10" style={{ clipPath: clip }}>
+          <motion.div
+            className="absolute inset-0"
+            style={{ scale: bloom, transformOrigin: `${geo.CX}% ${geo.CY}%` }}
+          >
+            {/* lintasan elips */}
+            <svg
+              aria-hidden
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="absolute inset-0 h-full w-full"
+            >
+              <ellipse
+                cx={geo.CX}
+                cy={geo.CY}
+                rx={geo.RX}
+                ry={geo.RY}
+                fill="none"
+                stroke="rgba(255,255,255,0.10)"
+                strokeWidth="0.15"
+              />
+            </svg>
+
+            {/* Matahari di pusat */}
+            <div
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${geo.CX}%`, top: `${geo.CY}%`, zIndex: 5 }}
+            >
+              <Planet
+                texture={SUN_TEXTURE}
+                size={84}
+                spin={40}
+                glow="rgba(245,181,74,0.85)"
+                className="drop-shadow-[0_0_60px_rgba(245,181,74,0.6)]"
+              />
+            </div>
+
+            {/* planet-planet mengorbit */}
+            {PLANETS.map((p, i) => (
+              <OrbitBody key={p.id} planet={p} index={i} base={sizes[i]} progress={pp} geo={geo} gain={gain} />
+            ))}
+
+            {/* bulan mengelilingi planet fokus */}
+            <MoonOrbit planet={focused} index={focus} size={focusedSize} progress={pp} geo={geo} />
+          </motion.div>
+        </motion.div>
+
+        {/* panel detail (lapis 2), muncul setelah reveal */}
+        <motion.div
+          style={{ opacity: uiOpacity }}
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end bg-gradient-to-t from-[#05060c] via-[#05060c]/90 to-transparent px-6 pb-12 pt-16 md:inset-x-auto md:inset-y-0 md:right-0 md:w-[55%] md:items-center md:justify-end md:bg-none md:px-12 md:pb-0 md:pt-0 lg:px-16"
+        >
           <AnimatePresence mode="wait">
             <DetailPanel key={focused.id} planet={focused} />
           </AnimatePresence>
-        </div>
+        </motion.div>
 
         {/* progres tur */}
-        <div className="absolute left-1/2 top-4 z-[130] flex -translate-x-1/2 items-center gap-2 md:bottom-6 md:left-12 md:top-auto md:translate-x-0">
+        <motion.div
+          style={{ opacity: uiOpacity }}
+          className="absolute left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-6 md:left-12 md:top-auto md:translate-x-0"
+        >
           {PLANETS.map((p, i) => (
             <span
               key={p.id}
@@ -307,7 +389,7 @@ export default function OrbitTour() {
               }`}
             />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );

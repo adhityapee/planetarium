@@ -1,66 +1,9 @@
 import Planet from "@/components/Planet";
 import Starfield from "@/components/Starfield";
 import OrbitTour from "@/components/OrbitTour";
-import { PLANETS, recap } from "@/lib/planets";
+import { recap } from "@/lib/planets";
 
 const nf = new Intl.NumberFormat("id-ID");
-
-function Hero() {
-  const saturn = PLANETS.find((p) => p.id === "saturnus")!;
-  return (
-    <section className="relative flex min-h-[100svh] items-center overflow-hidden px-6 pt-20 md:px-12 lg:px-16">
-      {/* video latar loop; fallback = starfield, disembunyikan saat prefers-reduced-motion */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        aria-hidden
-        src="/hero.mp4"
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-70 motion-reduce:hidden"
-      />
-      {/* scrim: lebih gelap di kiri (teks), lebih terang di kanan (Saturnus) */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#05060c] via-[#05060c]/70 to-[#05060c]/35" />
-
-      {/* Saturnus close-up, sebagian keluar layar. Ukuran beda HP vs desktop
-          (size px, jadi pakai 2 instance ketimbang scale yang bentrok transform). */}
-      <div className="pointer-events-none absolute right-[-24vw] top-[22%] -translate-y-1/2 md:hidden">
-        <div className="planet-rise" style={{ animationDelay: "0.5s" }}>
-          <Planet texture={saturn.texture} size={460} spin={saturn.spin} glow={saturn.glow} ring />
-        </div>
-      </div>
-      <div className="pointer-events-none absolute right-[-12vw] top-1/2 hidden -translate-y-1/2 md:block">
-        <div className="planet-rise" style={{ animationDelay: "0.5s" }}>
-          <Planet texture={saturn.texture} size={900} spin={saturn.spin} glow={saturn.glow} ring />
-        </div>
-      </div>
-
-      <div className="relative z-10 max-w-2xl">
-        <p className="rise text-sm uppercase tracking-[0.3em] text-[var(--color-muted)]" style={{ animationDelay: "0.55s" }}>
-          Planetarium
-        </p>
-        <h1 className="rise mt-4 font-serif text-7xl leading-[0.95] text-foreground md:text-8xl lg:text-9xl" style={{ animationDelay: "0.65s" }}>
-          Tata Surya
-        </h1>
-        <p className="rise mt-6 max-w-md text-lg leading-relaxed text-foreground/80" style={{ animationDelay: "0.8s" }}>
-          Delapan planet, satu Matahari, satu sistem. Geser untuk menyusuri dari
-          Merkurius hingga Neptunus.
-        </p>
-        <a
-          href="#tur"
-          className="rise mt-8 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-medium text-[#1a1304] transition-transform active:scale-[0.98]"
-          style={{ animationDelay: "0.92s" }}
-        >
-          Mulai jelajah
-          <span aria-hidden>→</span>
-        </a>
-      </div>
-
-      {/* fade bawah: lebur mulus ke section tur (#05060c), hilangkan seam */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-b from-transparent to-[#05060c]" />
-    </section>
-  );
-}
 
 function Recap() {
   const r = recap();
@@ -113,11 +56,7 @@ export default function Home() {
   return (
     <main className="relative">
       <Starfield />
-      <div className="intro-curtain" aria-hidden />
-      <Hero />
-      <div id="tur">
-        <OrbitTour />
-      </div>
+      <OrbitTour />
       <Recap />
       <Footer />
     </main>

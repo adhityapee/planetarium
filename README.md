@@ -4,7 +4,7 @@ Website edukatif interaktif untuk mengenal **8 planet tata surya beserta satelit
 
 > Hasil **refactor** dari sebuah hero "orbit" parfum menjadi planetarium edukatif. File asli disimpan di [`reference/index.html`](reference/index.html).
 
-**Live:** https://planetarium.vercel.app _(setelah deploy)_
+**Live:** https://jelajah-tata-surya.vercel.app _(setelah deploy)_
 
 ## Fitur
 

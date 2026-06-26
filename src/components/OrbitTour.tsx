@@ -25,12 +25,16 @@ const MOBILE: Geo = { CX: 50, CY: 23, RX: 32, RY: 15, FOCAL: Math.PI / 2 };
 
 const nf = new Intl.NumberFormat("id-ID");
 
-// ukuran dasar tiap planet (skala lembut dari diameter agar tetap terbaca)
+// seberapa besar planet fokus membesar (puncak skala = 0.36 + FOCUS_GAIN)
+const FOCUS_GAIN = 6;
+
+// ukuran dasar tiap planet. Rentang sempit (non-fokus sama-sama kecil) supaya saat
+// fokus, hanya 1 planet yang dominan; gain fokus yang membesarkannya.
 const sizes = (() => {
   const ds = PLANETS.map((p) => Math.log(p.diameterKm));
   const min = Math.min(...ds);
   const max = Math.max(...ds);
-  return PLANETS.map((p) => 44 + 52 * ((Math.log(p.diameterKm) - min) / (max - min)));
+  return PLANETS.map((p) => 32 + 22 * ((Math.log(p.diameterKm) - min) / (max - min)));
 })();
 
 function OrbitBody({
@@ -50,7 +54,9 @@ function OrbitBody({
   const left = useTransform(angle, (a) => `${geo.CX + geo.RX * Math.cos(a)}%`);
   const top = useTransform(angle, (a) => `${geo.CY + geo.RY * Math.sin(a)}%`);
   const t = useTransform(angle, (a) => (Math.cos(a - geo.FOCAL) + 1) / 2); // 1 = fokus
-  const scale = useTransform(t, (v) => 0.45 + 1.12 * v * v * v * v); // falloff tajam: fokus menonjol
+  // close-up tajam ke 1 planet: fokus membesar dominan, sisanya mengecil (ala reference).
+  // pangkat 6 -> jendela fokus sempit, tetangga cepat mengecil
+  const scale = useTransform(t, (v) => 0.36 + FOCUS_GAIN * v * v * v * v * v * v);
   const opacity = useTransform(t, (v) => 0.4 + 0.6 * v);
   const zIndex = useTransform(t, (v) => Math.round(10 + v * 90));
 
@@ -268,7 +274,7 @@ export default function OrbitTour() {
   });
 
   const focused = PLANETS[focus];
-  const focusedSize = sizes[focus] * 1.55; // sesuai puncak skala fokus
+  const focusedSize = sizes[focus] * (0.36 + FOCUS_GAIN); // sesuai puncak skala fokus
 
   return (
     <section ref={ref} className="relative" style={{ height: `${N * 90 + 140}vh` }}>

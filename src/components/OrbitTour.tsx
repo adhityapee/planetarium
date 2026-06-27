@@ -17,10 +17,11 @@ import { PLANETS, SUN_TEXTURE, MOON_TEXTURE, type Planet as P } from "@/lib/plan
 const N = PLANETS.length;
 const STEP = (Math.PI * 2) / N;
 
-// Geometri orbit (persen dari panggung). Desktop: fokus di kiri, panel di kanan.
+// Geometri orbit (persen dari panggung). Desktop: matahari & orbit di kiri, planet
+// fokus di tengah (~33%) tepat di samping kiri panel keterangan (kanan).
 // Mobile: orbit di atas, fokus di bawah-tengah, panel jadi bottom-sheet.
 type Geo = { CX: number; CY: number; RX: number; RY: number; FOCAL: number };
-const DESKTOP: Geo = { CX: 32, CY: 46, RX: 21, RY: 31, FOCAL: Math.PI };
+const DESKTOP: Geo = { CX: 13, CY: 46, RX: 20, RY: 30, FOCAL: 0 };
 const MOBILE: Geo = { CX: 50, CY: 23, RX: 32, RY: 15, FOCAL: Math.PI / 2 };
 
 const nf = new Intl.NumberFormat("id-ID");

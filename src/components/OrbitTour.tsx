@@ -319,8 +319,11 @@ export default function OrbitTour() {
           </p>
         </motion.div>
 
+        {/* Konten orbit + panel dibatasi lebar & dipusatkan. Posisi planet pakai %,
+            jadi tanpa batas ini di layar lebar planet fokus & panel makin berjauhan. */}
+        <div className="absolute inset-y-0 left-1/2 z-10 w-full max-w-[1440px] -translate-x-1/2">
         {/* orbit: muncul lewat clip-path reveal, lalu zoom mengikuti bloom */}
-        <motion.div className="absolute inset-0 z-10" style={{ clipPath: clip }}>
+        <motion.div className="absolute inset-0" style={{ clipPath: clip }}>
           <motion.div
             className="absolute inset-0"
             style={{ scale: bloom, transformOrigin: `${geo.CX}% ${geo.CY}%` }}
@@ -391,6 +394,7 @@ export default function OrbitTour() {
             />
           ))}
         </motion.div>
+        </div>
       </div>
     </section>
   );

@@ -17,10 +17,10 @@ import { PLANETS, SUN_TEXTURE, MOON_TEXTURE, type Planet as P } from "@/lib/plan
 const N = PLANETS.length;
 const STEP = (Math.PI * 2) / N;
 
-// Geometri orbit (persen dari panggung). Desktop: fokus di kiri, panel di kanan.
+// Geometri orbit (persen dari panggung). Desktop: fokus di KANAN, panel di kiri.
 // Mobile: orbit di atas, fokus di bawah-tengah, panel jadi bottom-sheet.
 type Geo = { CX: number; CY: number; RX: number; RY: number; FOCAL: number };
-const DESKTOP: Geo = { CX: 32, CY: 46, RX: 21, RY: 31, FOCAL: Math.PI };
+const DESKTOP: Geo = { CX: 68, CY: 46, RX: 21, RY: 31, FOCAL: 0 };
 const MOBILE: Geo = { CX: 50, CY: 23, RX: 32, RY: 15, FOCAL: Math.PI / 2 };
 
 const nf = new Intl.NumberFormat("id-ID");
@@ -369,7 +369,7 @@ export default function OrbitTour() {
         {/* panel detail (lapis 2), muncul setelah reveal */}
         <motion.div
           style={{ opacity: uiOpacity }}
-          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end bg-gradient-to-t from-[#05060c] via-[#05060c]/90 to-transparent px-6 pb-12 pt-16 md:inset-x-auto md:inset-y-0 md:right-0 md:w-[55%] md:items-center md:justify-end md:bg-none md:px-12 md:pb-0 md:pt-0 lg:px-16"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end bg-gradient-to-t from-[#05060c] via-[#05060c]/90 to-transparent px-6 pb-12 pt-16 md:inset-x-auto md:inset-y-0 md:left-0 md:w-[55%] md:items-center md:justify-start md:bg-none md:px-12 md:pb-0 md:pt-0 lg:px-16"
         >
           <AnimatePresence mode="wait">
             <DetailPanel key={focused.id} planet={focused} />
@@ -379,7 +379,7 @@ export default function OrbitTour() {
         {/* progres tur */}
         <motion.div
           style={{ opacity: uiOpacity }}
-          className="absolute left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-6 md:left-12 md:top-auto md:translate-x-0"
+          className="absolute left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-2 md:bottom-6 md:left-auto md:right-12 md:top-auto md:translate-x-0"
         >
           {PLANETS.map((p, i) => (
             <span
